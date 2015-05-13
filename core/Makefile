@@ -8,7 +8,7 @@ allobj: core.o ipc.o calqueue.o message_state.o numerical.o topology.o main.o
 
 core.o: core.c
 	@echo "[CC] $@"
-	@$(CC) -c core.c $(INCLUDE) $(CFLAGS) -O1
+	@$(CC) -c core.c $(INCLUDE) $(CFLAGS)
 
 ipc.o: ipc.c
 	@echo "[CC] $@"
