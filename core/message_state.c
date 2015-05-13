@@ -6,60 +6,77 @@
 #include "message_state.h"
 
 
+struct __current_time_vector
+{
+  simtime_t time;
+  
+} __attribute__ ((aligned (64)));
 
-simtime_t *current_time_vector;
+struct __outgoing_time_vector
+{
+  simtime_t time;
+  
+} __attribute__ ((aligned (64)));
 
-simtime_t *outgoing_time_vector;
 
-extern int queue_lock;
+struct __current_time_vector *current_time_vector __attribute__ ((aligned (64)));
+
+struct __outgoing_time_vector *outgoing_time_vector  __attribute__ ((aligned (64)));
+
+
+extern __thread unsigned int events;
 
 
 void message_state_init(void)
 {
-  int i;
+  int i, ret;
   
-  current_time_vector = malloc(sizeof(simtime_t) * n_cores);
-  outgoing_time_vector = malloc(sizeof(simtime_t) * n_cores);
+  if( (ret = posix_memalign((void**)&current_time_vector, 64, sizeof(struct __current_time_vector) * n_cores)) != 0 || 
+    (ret = posix_memalign((void**)&outgoing_time_vector, 64, sizeof(struct __current_time_vector) * n_cores)) != 0)
+  {
+    rootsim_error(true, strerror(ret));
+    abort();
+  }
   
   for(i = 0; i < n_cores; i++)
   {
-    current_time_vector[i] = INFTY;
-    outgoing_time_vector[i] = INFTY;
+    current_time_vector[i].time = INFTY;
+    outgoing_time_vector[i].time = INFTY;
   }
 }
 
 void execution_time(simtime_t current_time)
 {    
-  current_time_vector[tid] = current_time;
-  outgoing_time_vector[tid] = INFTY;
+  current_time_vector[tid].time = current_time;
+  outgoing_time_vector[tid].time = INFTY;
 }
 
 void commit_time(simtime_t min_time_output)
 {
-  current_time_vector[tid] = INFTY;
-  outgoing_time_vector[tid] = min_time_output;
+  current_time_vector[tid].time = INFTY;
+  outgoing_time_vector[tid].time = min_time_output;
 }
 
-int check_safety(unsigned int *events)
+int check_safety(void)
 {
   int i;
   unsigned int min_tid = n_cores + 1;
   double min = INFTY;
   int ret = 0;
 
-  *events = 0;
+  events = 0;
   
   for(i = 0; i < n_cores; i++)
   {
-    if( (i != tid) && ((current_time_vector[i] < min) || (outgoing_time_vector[i] < min)) )
+    if( (i != tid) && ((current_time_vector[i].time < min) || (outgoing_time_vector[i].time < min)) )
     {
-      min = ( current_time_vector[i] < outgoing_time_vector[i] ?  current_time_vector[i] : outgoing_time_vector[i]  );
+      min = ( current_time_vector[i].time < outgoing_time_vector[i].time ?  current_time_vector[i].time : outgoing_time_vector[i].time  );
       min_tid = i;
-      *events++;
+      events++;
     }
   }
 
-  if((current_time_vector[tid] < min) || (current_time_vector[tid] == min && tid < min_tid))
+  if((current_time_vector[tid].time < min) || (current_time_vector[tid].time == min && tid < min_tid))
     ret = 1;
   
   return ret;

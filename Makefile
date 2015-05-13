@@ -5,7 +5,7 @@ INCLUDE = -I include/
 
 FLAGS = -Wall -mrtm -pthread -lm
 
-DEBUG = #Insert -g to enable debug mode
+DEBUG = -g #Insert -g to enable debug mode
 
 CFLAGS = $(FLAGS) $(DEBUG)
 
@@ -90,7 +90,7 @@ compile_pcs: $(PCS_OBJ)
 
 $(PCS_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE) -O1
 
 compile_pcs-prealloc: $(PCS_PREALLOC_OBJ)
 	@ld $(DEBUG) -r $(PCS_PREALLOC_OBJ) -o model/__application.o

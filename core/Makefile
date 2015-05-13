@@ -8,7 +8,7 @@ allobj: core.o ipc.o calqueue.o message_state.o numerical.o topology.o main.o
 
 core.o: core.c
 	@echo "[CC] $@"
-	@$(CC) -c core.c $(INCLUDE) $(CFLAGS)
+	@$(CC) -c core.c $(INCLUDE) $(CFLAGS) -O1
 
 ipc.o: ipc.c
 	@echo "[CC] $@"
@@ -16,7 +16,7 @@ ipc.o: ipc.c
 
 calqueue.o: calqueue.c
 	@echo "[CC] $@"
-	@$(CC) -c calqueue.c $(INCLUDE) $(CFLAGS)
+	@$(CC) -c calqueue.c $(INCLUDE) $(CFLAGS) -O2
 
 message_state.o: message_state.c
 	@echo "[CC] $@"
@@ -24,12 +24,12 @@ message_state.o: message_state.c
 
 numerical.o: numerical.c
 	@echo "[CC] $@"
-	@$(CC) -c numerical.c $(INCLUDE) $(CFLAGS)
+	@$(CC) -c numerical.c $(INCLUDE) $(CFLAGS) -O1
 
 topology.o: topology.c
 	@echo "[CC] $@"
-	@$(CC) -c topology.c $(INCLUDE) $(CFLAGS)
+	@$(CC) -c topology.c $(INCLUDE) $(CFLAGS) -O1
 
 main.o: main.c
 	@echo "[CC] $@"
-	@$(CC) -c main.c $(INCLUDE) $(CFLAGS)
+	@$(CC) -c main.c $(INCLUDE) $(CFLAGS) -O2

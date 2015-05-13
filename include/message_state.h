@@ -16,7 +16,7 @@ void execution_time(simtime_t time);
 void commit_time(simtime_t time);
 
 // It returns 1 if there is not any other timestamp less than the current timestamp executed in this thread
-int check_safety(unsigned int *);
+int check_safety(void);
 
 
 #endif

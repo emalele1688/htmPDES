@@ -2,25 +2,15 @@
 #define __CORE_H
 
 
-#include "ROOT-Sim.h"
-
+#include <float.h>
 #include <stdbool.h>
 #include <math.h>
-#include <float.h>
+
+#include "ROOT-Sim.h"
 
 
-<<<<<<< HEAD
 #define MAX_LPs			2048
-=======
-#include <float.h>
 
-#include <ROOT-Sim.h>
-
-#define MAX_LPs	2048
-
-#define MAX_DATA_SIZE		64
-#define THR_POOL_SIZE		20
->>>>>>> parent of 6173fc2... Some tuning
 
 #define D_DIFFER_ZERO(a) (fabs(a) >= DBL_EPSILON)
 
@@ -41,5 +31,6 @@ void thread_loop(unsigned int thread_id);
 extern void rootsim_error(bool fatal, const char *msg, ...);
 
 extern void _mkdir(const char *path);
+
 
 #endif

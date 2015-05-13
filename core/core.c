@@ -42,6 +42,8 @@ __thread unsigned int current_lp = 0;
 // Current thread id
 __thread unsigned int tid = 0;
 
+__thread unsigned int events __attribute__ ((aligned (64))) = 0;
+
 // Total number of cores required for simulation 
 unsigned int n_cores;
 // Total number of logical processes running in the simulation 
@@ -64,21 +66,21 @@ bool sim_error = false;
 
 __thread int delta_count = 0;
 __thread double abort_percent = 1.0;
-__thread unsigned long long evt_count = 0;
-__thread unsigned long long evt_try_count = 0;
-__thread unsigned long long abort_count_conflict = 0, abort_count_safety = 0;
+__thread unsigned long int evt_count = 0;
+__thread unsigned long int evt_try_count = 0;
+__thread unsigned long int abort_count_conflict = 0, abort_count_safety = 0;
 
 
 
 static bool check_termination(void);
 
-static void SetState(void *ptr);
+static void flush(void);
+
+void SetState(void *ptr);
 
 extern void ProcessEvent(unsigned int me, simtime_t now, unsigned int event, void *content, unsigned int size, void *state);
 
 extern int OnGVT(unsigned int me, void *snapshot);
-
-static void flush(void);
 
 
 void rootsim_error(bool fatal, const char *msg, ...) 
@@ -213,8 +215,7 @@ void thread_loop(unsigned int thread_id)
 {
   msg_t *current_msg;
   int status;
-  unsigned int events;
- 
+   
   tid = thread_id;
   
   while(!stop && !sim_error)
@@ -227,7 +228,7 @@ void thread_loop(unsigned int thread_id)
 
     while(1)
     {
-      if(check_safety(current_lvt, &events))
+      if(check_safety())
 	ProcessEvent(current_lp, current_lvt, current_msg->type, current_msg->data, current_msg->data_size, states[current_lp]);
       else
       {
@@ -240,7 +241,7 @@ void thread_loop(unsigned int thread_id)
           throttling(events);
 	  #endif 
 	  
-	  if(check_safety(current_lvt, &events))
+	  if(check_safety())
 	    _xend();
 	  else
 	    _xabort(_ROLLBACK_CODE);
@@ -279,7 +280,7 @@ void thread_loop(unsigned int thread_id)
     }
   }
   
-  printf("Thread %d aborted %u times for cross check condition and %u for memory conflicts\n", tid, abort_count_conflict, abort_count_safety);
+  printf("Thread %u aborted %lu times for cross check condition and %lu for memory conflicts\n", tid, abort_count_conflict, abort_count_safety);
 }
 
 void flush(void) 
