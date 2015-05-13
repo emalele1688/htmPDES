@@ -14,10 +14,6 @@ void ProcessEvent(int me, simtime_t now, int event_type, event_content_type *eve
 	lp_state_type *state_ptr = (lp_state_type*)state;
 
 
-	if(state_ptr != NULL)
-		state_ptr->lvt = now;
-
-
 	switch (event_type) {
 
 		case INIT:
@@ -37,10 +33,10 @@ void ProcessEvent(int me, simtime_t now, int event_type, event_content_type *eve
 				printf("Running a traditional loop-based PHOLD benchmark with counter set to %d, %d total events per LP\n", LOOP_COUNT, COMPLETE_EVENTS);
 			}
 			
-//			for(i = 0; i < 10; i++) {
+			for(i = 0; i < 10; i++) {
 				timestamp = (simtime_t) (20 * Random());
 				ScheduleNewEvent(me, timestamp, LOOP, NULL, 0);
-//			}
+			}
 
 			break;
 
@@ -68,7 +64,6 @@ void ProcessEvent(int me, simtime_t now, int event_type, event_content_type *eve
 bool OnGVT(unsigned int me, lp_state_type *snapshot) {
 
 	if(snapshot->events < COMPLETE_EVENTS)
-//	if(snapshot->lvt < COMPLETE_TIME)
 		return false;
 	return true;
 }

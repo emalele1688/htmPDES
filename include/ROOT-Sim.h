@@ -126,10 +126,6 @@ char *GetParameterString(void *args, char *name);
 bool IsParameterPresent(void *args, char *name);
 
 
-// TODO: DA TOGLIERE, ERA ESPOSTO PER DEBUGGING!
-void __trace_input_queue(char *, int, unsigned int);
-
-
 // Expose to the application level the rollbackable numerical library
 double Random(void);
 int RandomRange(int min, int max);

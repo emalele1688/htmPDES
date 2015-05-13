@@ -1,15 +1,26 @@
-#Versione test - non uso ottimizzazioni del compilatore
 
-CC=gcc
-FLAGS=-g -Wall -mrtm -pthread -lm
-INCLUDE=-I include/ -I mm/ -I core/include/
+CC = gcc
+
+INCLUDE = -I include/ 
+
+FLAGS = -Wall -mrtm -pthread -lm
+
+DEBUG = #Insert -g to enable debug mode
+
+CFLAGS = $(FLAGS) $(DEBUG)
+
+TARGET = test
+
+ENGINE_RULE = compile_core compile_mm linking_application_to_mm output
 
 
-ifdef MALLOC
-CFLAGS=$(FLAGS) -DNO_DYMELOR
-else
-CFLAGS=$(FLAGS)
-endif
+MM_SOURCES=mm/allocator.c\
+		mm/dymelor.c\
+		mm/recoverable.c
+
+
+PCS_SOURCES=model/pcs/application.c\
+		model/pcs/functions_app.c
 
 
 PCS_PREALLOC_SOURCES=model/pcs-prealloc/application.c\
@@ -17,13 +28,11 @@ PCS_PREALLOC_SOURCES=model/pcs-prealloc/application.c\
 		    model/pcs-prealloc/topology.c
 
 
-PCS_SOURCES=model/pcs/application.c\
-		    model/pcs/functions_app.c
-
-
 PHOLD_SOURCES=model/phold/application.c
 
+
 TCAR_SOURCES=model/tcar/application.c
+
 
 TRAFFIC_SOURCES=model/traffic/application.c\
 		    model/traffic/functions.c\
@@ -31,25 +40,17 @@ TRAFFIC_SOURCES=model/traffic/application.c\
 		    model/traffic/normal_cdf.c
 
 
-
-TARGET=test
-
-CORE_SOURCES =  core/message_state.c\
+CORE_SOURCES=core/message_state.c\
 		core/core.c\
 		core/calqueue.c\
 		core/topology.c\
-		core/queue.c\
+		core/ipc.c\
 		core/main.c\
 		core/numerical.c
 
-MM_SOURCES=mm/allocator.c\
-		mm/dymelor.c\
-		mm/recoverable.c
 
-
-MM_OBJ=$(MM_SOURCES:.c=.o)
 CORE_OBJ=$(CORE_SOURCES:.c=.o)
-
+MM_OBJ=$(MM_SOURCES:.c=.o)
 PCS_OBJ=$(PCS_SOURCES:.c=.o)
 PCS_PREALLOC_OBJ=$(PCS_PREALLOC_SOURCES:.c=.o)
 TRAFFIC_OBJ=$(TRAFFIC_SOURCES:.c=.o)
@@ -59,51 +60,75 @@ PHOLD_OBJ=$(PHOLD_SOURCES:.c=.o)
 
 all: pcs
 
-pcs: _pcs mm core link
+pcs: compile_pcs $(ENGINE_RULE)
 
-pcs-prealloc: _pcs_prealloc mm core link
+pcs-prealloc: compile_pcs-prealloc $(ENGINE_RULE)
 
-traffic: _traffic mm core link
+phold: compile_phold $(ENGINE_RULE)
 
-tcar: _tcar mm core link
+tcar: compile_tcar $(ENGINE_RULE)
 
-phold: _phold mm core link
+traffic: compile_traffic $(ENGINE_RULE)
 
 
-link:
-ifdef MALLOC
-	gcc -g -o $(TARGET) model/__application.o core/__core.o $(CFLAGS)
-else
-	ld -g -r --wrap malloc --wrap free --wrap realloc --wrap calloc -o model/application-mm.o model/__application.o --whole-archive mm/__mm.o
-	gcc -g -o $(TARGET) model/application-mm.o core/__core.o $(CFLAGS)
-endif
+compile_core:
+	make -C core/ allobj
 
-mm: $(MM_OBJ)
-	@ld -r -g $(MM_OBJ) -o mm/__mm.o
 
-core: $(CORE_OBJ)
-	@ld -r -g $(CORE_OBJ) -o core/__core.o
+compile_mm: $(MM_OBJ)
+	@ld $(DEBUG) -r $(MM_OBJ) -o mm/__mm.o
 
-%.o: %.c
+$(MM_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -g -c -o $@ $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
 
-_pcs_prealloc: $(PCS_PREALLOC_OBJ)
-	@ld -r -g $(PCS_PREALLOC_OBJ) -o model/__application.o
 
-_pcs: $(PCS_OBJ)
-	@ld -r -g $(PCS_OBJ) -o model/__application.o
+# -------------------------------- Application rules --------------------------------
 
-_tcar: $(TCAR_OBJ)
-	@ld -r -g $(TCAR_OBJ) -o model/__application.o
+compile_pcs: $(PCS_OBJ)
+	@ld $(DEBUG) -r $(PCS_OBJ) -o model/__application.o
 
-_phold: $(PHOLD_OBJ)
-	@ld -r -g $(PHOLD_OBJ) -o model/__application.o
+$(PCS_OBJ): %.o: %.c
+	@echo "[CC] $@"
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
 
-_traffic: $(TRAFFIC_OBJ)
-	@ld -r -g $(TRAFFIC_OBJ) -o model/__application.o
-	
+compile_pcs-prealloc: $(PCS_PREALLOC_OBJ)
+	@ld $(DEBUG) -r $(PCS_PREALLOC_OBJ) -o model/__application.o
+
+$(PCS_PREALLOC_OBJ): %.o: %.c
+	@echo "[CC] $@"
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+
+compile_phold: $(PHOLD_OBJ)
+	@ld $(DEBUG) -r $(PHOLD_OBJ) -o model/__application.o
+
+$(PHOLD_OBJ): %.o: %.c
+	@echo "[CC] $@"
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+
+compile_tcar: $(TCAR_OBJ)
+	@ld $(DEBUG) -r $(TCAR_OBJ) -o model/__application.o
+
+$(TCAR_OBJ): %.o: %.c
+	@echo "[CC] $@"
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+
+compile_traffic: $(TRAFFIC_OBJ)
+	@ld $(DEBUG) -r $(TRAFFIC_OBJ) -o model/__application.o
+
+$(TRAFFIC_OBJ): %.o: %.c
+	@echo "[CC] $@"
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+
+
+linking_application_to_mm:
+	ld $(DEBUG) -r --wrap malloc --wrap free --wrap realloc --wrap calloc -o model/application-mm.o model/__application.o --whole-archive mm/__mm.o
+
+
+output:
+	$(CC) -o $(TARGET) -Wall model/application-mm.o $(CORE_OBJ) $(CFLAGS)
 
 
 clean:
 	@find . -name "*.o" -exec rm {} \;
+	@rm -f $(TARGET)
