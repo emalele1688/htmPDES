@@ -12,7 +12,7 @@ core.o: core.c
 
 ipc.o: ipc.c
 	@echo "[CC] $@"
-	@$(CC) -c ipc.c $(INCLUDE) $(CFLAGS)
+	@$(CC) -c ipc.c $(INCLUDE) $(CFLAGS) -O2
 
 calqueue.o: calqueue.c
 	@echo "[CC] $@"

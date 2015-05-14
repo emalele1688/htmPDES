@@ -39,7 +39,7 @@ static event_pool pool;
 
 static __thread msg_t *last_node = 0;
 
-int ipc_lock = 0;
+volatile int ipc_lock = 0;
 
 
 void ipc_init(void)

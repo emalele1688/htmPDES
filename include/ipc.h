@@ -29,7 +29,7 @@ struct __msg_t
 typedef struct __msg_t msg_t;
 
 
-extern int ipc_lock;
+volatile extern int ipc_lock;
 
 
 void ipc_init(void);
