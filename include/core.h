@@ -18,6 +18,7 @@
 extern __thread simtime_t current_lvt;
 extern __thread unsigned int current_lp;
 extern __thread unsigned int tid;
+extern __thread unsigned int events __attribute__ ((aligned (64)));
 
 extern unsigned int n_cores;
 extern unsigned int n_prc_tot;

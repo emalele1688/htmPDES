@@ -41,7 +41,7 @@
 
 
 // LPs-state structure pointer (each LP allocates the state structure locally)
-void **states;
+static void **states;
 
 // Current local virtual time
 __thread simtime_t current_lvt = 0;
@@ -52,13 +52,13 @@ __thread unsigned int tid = 0;
 
 __thread unsigned int events __attribute__ ((aligned (64))) = 0;
 
-__thread double abort_percent = 1.0;
+static __thread double abort_percent = 1.0;
 
-__thread unsigned long int evt_count = 0;
+static __thread unsigned long int evt_count = 0;
 
-__thread unsigned long int abort_count_conflict = 0, abort_count_safety = 0;
+static __thread unsigned long int abort_count_conflict = 0, abort_count_safety = 0;
 
-__thread int delta_count = 0;
+static __thread int delta_count = 0;
 
 // Total number of cores required for simulation 
 unsigned int n_cores;
@@ -66,11 +66,11 @@ unsigned int n_cores;
 unsigned int n_prc_tot;
 
 // Controll flag for main loop
-bool stop = false;
+static bool stop = false;
 // LP execution flag
-bool *can_stop;
+static bool *can_stop;
 // System error flag
-bool sim_error = false;
+static bool sim_error = false;
 
 
 static void process_init_event(void);
