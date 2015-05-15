@@ -8,7 +8,7 @@
 
 
 #define TEMP_POOL_SIZE	32
-#define POOL_MAX_SIZE	50000
+#define POOL_MAX_SIZE	500000
 
 
 /* Memory pool for messages send by the local thread */

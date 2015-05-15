@@ -40,7 +40,7 @@ void ProcessEvent(int me, simtime_t now, int event_type, event_content_type *eve
 
 			break;
 
-			case LOOP:
+		case LOOP:
 			for(i = 0; i < LOOP_COUNT; i++) {
 				pow(i, j);
 			//	j = i*i;

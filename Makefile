@@ -5,14 +5,22 @@ INCLUDE = -I include/
 
 FLAGS = -Wall -mrtm -pthread -lm
 
-DEBUG = -g #Insert -g to enable debug mode
+CFLAGS = $(FLAGS)
 
-CFLAGS = $(FLAGS) $(DEBUG)
+DEBUG = #Insert -g to enable debug mode
 
 TARGET = test
 
+ifndef NO_DYMELOR
 ENGINE_RULE = compile_core compile_mm linking_application_to_mm output
+else
+CFLAGS = $(FLAGS) -DNO_DYMELOR
+ENGINE_RULE = compile_core compile_mm output
+endif
 
+ifdef THROTTLING
+CFLAGS += -DTHROTTLING
+endif
 
 MM_SOURCES=mm/allocator.c\
 		mm/dymelor.c\
@@ -80,7 +88,7 @@ compile_mm: $(MM_OBJ)
 
 $(MM_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(DEBUG) $(INCLUDE)
 
 
 # -------------------------------- Application rules --------------------------------
@@ -90,35 +98,35 @@ compile_pcs: $(PCS_OBJ)
 
 $(PCS_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE) -O1
+	@$(CC) -o $@ -c $< $(CFLAGS) $(DEBUG) $(INCLUDE) -O1
 
 compile_pcs-prealloc: $(PCS_PREALLOC_OBJ)
 	@ld $(DEBUG) -r $(PCS_PREALLOC_OBJ) -o model/__application.o
 
 $(PCS_PREALLOC_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(DEBUG) $(INCLUDE)
 
 compile_phold: $(PHOLD_OBJ)
 	@ld $(DEBUG) -r $(PHOLD_OBJ) -o model/__application.o
 
 $(PHOLD_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(DEBUG) $(INCLUDE) -O1
 
 compile_tcar: $(TCAR_OBJ)
 	@ld $(DEBUG) -r $(TCAR_OBJ) -o model/__application.o
 
 $(TCAR_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(DEBUG) $(INCLUDE)
 
 compile_traffic: $(TRAFFIC_OBJ)
 	@ld $(DEBUG) -r $(TRAFFIC_OBJ) -o model/__application.o
 
 $(TRAFFIC_OBJ): %.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)
+	@$(CC) -o $@ -c $< $(CFLAGS) $(DEBUG) $(INCLUDE)
 
 
 linking_application_to_mm:
@@ -126,7 +134,11 @@ linking_application_to_mm:
 
 
 output:
-	$(CC) -o $(TARGET) -Wall model/application-mm.o $(CORE_OBJ) $(CFLAGS)
+ifndef NO_DYMELOR
+	$(CC) -o $(TARGET) -Wall model/application-mm.o $(CORE_OBJ) $(CFLAGS) $(DEBUG)
+else
+	$(CC) -o $(TARGET) -Wall model/__application.o $(CORE_OBJ) $(CFLAGS) $(DEBUG)
+endif
 
 
 clean:

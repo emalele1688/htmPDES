@@ -25,12 +25,18 @@ extern unsigned int n_prc_tot;
 
 void init(unsigned int _thread_num, unsigned int);
 
+void rootsim_error(bool fatal, const char *msg, ...);
+
+void _mkdir(const char *path);
+
+void SetState(void *ptr);
+
 //Esegue il loop del singolo thread
 void thread_loop(unsigned int thread_id);
 
-extern void rootsim_error(bool fatal, const char *msg, ...);
+extern void ProcessEvent(unsigned int me, simtime_t now, unsigned int event, void *content, unsigned int size, void *state);
 
-extern void _mkdir(const char *path);
+extern int OnGVT(unsigned int me, void *snapshot);
 
 
 #endif

@@ -31,6 +31,14 @@
 
 #define MAX_PATHLEN	512
 
+#define HILL_EPSILON_GREEDY	0.05
+
+#define HILL_CLIMB_EVALUATE	500
+
+#define DELTA 500  // tick count
+
+#define HIGHEST_COUNT	5
+
 
 // LPs-state structure pointer (each LP allocates the state structure locally)
 void **states;
@@ -43,6 +51,14 @@ __thread unsigned int current_lp = 0;
 __thread unsigned int tid = 0;
 
 __thread unsigned int events __attribute__ ((aligned (64))) = 0;
+
+__thread double abort_percent = 1.0;
+
+__thread unsigned long int evt_count = 0;
+
+__thread unsigned long int abort_count_conflict = 0, abort_count_safety = 0;
+
+__thread int delta_count = 0;
 
 // Total number of cores required for simulation 
 unsigned int n_cores;
@@ -57,30 +73,15 @@ bool *can_stop;
 bool sim_error = false;
 
 
+static void process_init_event(void);
 
+static void throttling(void);
 
-#define HILL_EPSILON_GREEDY	0.05
-#define HILL_CLIMB_EVALUATE	500
-#define DELTA 500  // tick count
-#define HIGHEST_COUNT	5
-
-__thread int delta_count = 0;
-__thread double abort_percent = 1.0;
-__thread unsigned long int evt_count = 0;
-__thread unsigned long int evt_try_count = 0;
-__thread unsigned long int abort_count_conflict = 0, abort_count_safety = 0;
-
-
+static void hill_climbing(void);
 
 static bool check_termination(void);
 
 static void flush(void);
-
-void SetState(void *ptr);
-
-extern void ProcessEvent(unsigned int me, simtime_t now, unsigned int event, void *content, unsigned int size, void *state);
-
-extern int OnGVT(unsigned int me, void *snapshot);
 
 
 void rootsim_error(bool fatal, const char *msg, ...) 
@@ -130,53 +131,12 @@ void _mkdir(const char *path)
   if(access(opath, F_OK))
     if(mkdir(opath, S_IRWXU))
       if(errno != EEXIST)
-	if(errno != EEXIST)
-	  rootsim_error(true, "Could not create output directory", opath);
+	rootsim_error(true, "Could not create output directory", opath);
 }
-
-void throttling(unsigned int events) {
-  long long tick_count;
-  register int i;
-
-  if(delta_count == 0)
-	return;
-//  for(i = 0; i < 1000; i++);
-
-  tick_count = CLOCK_READ();
-  while(true) {
-	if(CLOCK_READ() > tick_count + 	events * DELTA * delta_count)
-		break;
-  }
-}
-
-void hill_climbing(void) {
-	if((double)abort_count_safety / (double)evt_count < abort_percent && delta_count < HIGHEST_COUNT) {
-		delta_count++;
-//		printf("Incrementing delta_count to %d\n", delta_count);
-	} else {
-/*		if(random() / RAND_MAX < HILL_EPSILON_GREEDY) {
-			delta_count /= (random() / RAND_MAX) * 10 + 1;
-		}
-*/	}
-
-	abort_percent = (double)abort_count_safety / (double)evt_count;
-}
-
 
 void SetState(void *ptr)
 {
   states[current_lp] = ptr;
-}
-
-bool check_termination(void)
-{
-  int i;
-  bool ret = true;
-  
-  for(i = 0; i < n_prc_tot; i++)
-    ret &= can_stop[i];
-
-  return ret;
 }
 
 static void process_init_event(void) 
@@ -211,6 +171,39 @@ void init(unsigned int thread_num, unsigned int lps_num)
   process_init_event();
 }
 
+static void throttling(void) 
+{
+  long long tick_count;
+  register int i;
+
+  if(delta_count == 0)
+    return;
+
+  tick_count = CLOCK_READ();
+  while(true) 
+    if(CLOCK_READ() > tick_count + (events * DELTA * delta_count))
+      break;
+}
+
+static void hill_climbing(void) 
+{
+  if(((double)abort_count_safety / (double)evt_count) < abort_percent && delta_count < HIGHEST_COUNT)
+    delta_count++;
+
+  abort_percent = (double)abort_count_safety / (double)evt_count;
+}
+
+bool check_termination(void)
+{
+  int i;
+  bool ret = true;
+  
+  for(i = 0; i < n_prc_tot; i++)
+    ret &= can_stop[i];
+
+  return ret;
+}
+
 void thread_loop(unsigned int thread_id)
 {
   msg_t *current_msg;
@@ -232,13 +225,12 @@ void thread_loop(unsigned int thread_id)
 	ProcessEvent(current_lp, current_lvt, current_msg->type, current_msg->data, current_msg->data_size, states[current_lp]);
       else
       {
-	evt_try_count++;
 	if( (status = _xbegin()) == _XBEGIN_STARTED)
 	{
 	  ProcessEvent(current_lp, current_lvt, current_msg->type, current_msg->data, current_msg->data_size, states[current_lp]);
 
 	  #ifdef THROTTLING
-          throttling(events);
+          throttling();
 	  #endif 
 	  
 	  if(check_safety())
@@ -266,7 +258,7 @@ void thread_loop(unsigned int thread_id)
 
     #ifdef THROTTLING
     if((evt_count - HILL_CLIMB_EVALUATE * (evt_count / HILL_CLIMB_EVALUATE)) == 0)
-	    hill_climbing();
+      hill_climbing();
     #endif
     
     can_stop[current_lp] = OnGVT(current_lp, states[current_lp]);
