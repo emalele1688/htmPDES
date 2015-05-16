@@ -6,10 +6,7 @@
 #include "core.h"
 
 
-#define POOL_START_SIZE		1024
 #define MAX_DATA_SIZE		32
-#define THR_POOL_SIZE		32
-
 
 
 struct __msg_t
@@ -22,10 +19,10 @@ struct __msg_t
   int type;				// 16 - 20
   
   unsigned int data_size;		// 20 - 24
-  unsigned char data[MAX_DATA_SIZE];	// 24 - 64
+  unsigned char data[MAX_DATA_SIZE];	// 24 - 56
   
 }; 
- 
+
 typedef struct __msg_t msg_t;
 
 

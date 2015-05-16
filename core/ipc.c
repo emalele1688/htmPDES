@@ -8,7 +8,7 @@
 
 
 #define TEMP_POOL_SIZE	32
-#define POOL_MAX_SIZE	500000
+#define POOL_MAX_SIZE	65536
 
 
 /* Memory pool for messages send by the local thread */
@@ -43,7 +43,7 @@ volatile int ipc_lock = 0;
 
 
 void ipc_init(void)
-{  
+{
   calqueue_init();
   
   pool.head = malloc(POOL_MAX_SIZE * sizeof(msg_t));
@@ -73,21 +73,29 @@ msg_t *next_event(void)
 
 double deliver_events(void)
 {
-  if(pool.curr == POOL_MAX_SIZE)
-  {
-    rootsim_error(true, "Pool overflow\n");
-    abort();
-  }
-
   msg_t *_new;
   simtime_t min;
   unsigned int i = 0;
+  
+  if((pool.curr + lts_pool.non_deliver_size) >= POOL_MAX_SIZE)
+  {
+    while(pool.curr < POOL_MAX_SIZE)
+    {
+      _new = &pool.head[pool.curr++];
+      memcpy(_new, &lts_pool.local_pool[i], sizeof(msg_t));
+      calqueue_put(_new->timestamp, _new);
+      i++;
+    }
+    
+    pool.head = malloc(POOL_MAX_SIZE * sizeof(msg_t));
+    pool.curr = 0;
+  }
   
   if(last_node != 0)
   {
     memcpy(last_node, &lts_pool.local_pool[0], sizeof(msg_t));
     calqueue_put(last_node->timestamp, last_node);
-    i = 1;
+    i++;
     last_node = 0;
   }
         
@@ -111,7 +119,7 @@ void ScheduleNewEvent(unsigned int receiver, simtime_t timestamp, unsigned int e
 {
   msg_t *new_event;
   
-  if(lts_pool.non_deliver_size == THR_POOL_SIZE)
+  if(lts_pool.non_deliver_size == TEMP_POOL_SIZE)
   {
     rootsim_error(true, "event pool overflow\n");
     return;
@@ -138,7 +146,7 @@ void ScheduleNewEvent(unsigned int receiver, simtime_t timestamp, unsigned int e
 }
 
 void free_event(msg_t *msg)
-{
+{  
   last_node = msg;
 }
 
