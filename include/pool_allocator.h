@@ -3,8 +3,8 @@
 #define _POOL_ALLOCATOR_H
 
 
-#define FREE_NODE_MAP_SIZE	512
-#define POOL_MAX_SIZE		50000
+#define FREE_NODE_MAP_SIZE	2048
+#define POOL_MAX_SIZE		65536
 
 
 typedef struct __pool_allocator
