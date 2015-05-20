@@ -37,4 +37,3 @@ topology.o: topology.c
 main.o: main.c
 	@echo "[CC] $@"
 	@$(CC) -c main.c $(INCLUDE) $(CFLAGS) $(DEBUG) -O2
-

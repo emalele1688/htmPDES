@@ -273,7 +273,6 @@ void thread_loop(unsigned int thread_id)
   }
   
   printf("Thread %u aborted %lu times for cross check condition and %lu for memory conflicts\n", tid, abort_count_conflict, abort_count_safety);
-  
 }
 
 void flush(void) 

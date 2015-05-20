@@ -5,6 +5,8 @@
 #include <limits.h>
 #include <stdbool.h>
 
+#include "pool_allocator.h"
+
 #include "calqueue.h"
 
 
@@ -24,6 +26,9 @@ static double	top_threshold,
 
 static double	buckettop,
 		cwidth;
+
+
+static pool_allocator *_calqueue_allocator;
 
 
 
@@ -132,7 +137,7 @@ static double new_width(void) {
 	// Free the temp structure (the events have been re-injected in the queue)
 	for(i = 0; i < 25; i++) {
 		if(temp[i] != NULL) {
-			free(temp[i]);
+			free_node(_calqueue_allocator, temp[i]);
 		}
 	}
 
@@ -180,7 +185,7 @@ static void resize(int newsize) {
 		while(temp != NULL) {
 			calqueue_put(temp->timestamp, temp->payload);
 			temp2 = temp->next;
-			free(temp);
+			free_node(_calqueue_allocator, temp);
 			temp = temp2;
 		}
 	}
@@ -258,10 +263,13 @@ static calqueue_node *calqueue_deq(void) {
 
 
 // This function initializes the messaging queue.
-void calqueue_init(void) {
-
-	localinit(0, 2, 1.0, 0.0);
-	resize_enabled = true;
+void calqueue_init(void) 
+{
+  _calqueue_allocator = init_new_allocator(sizeof(calqueue_node));
+  
+  localinit(0, 2, 1.0, 0.0);
+  
+  resize_enabled = true;
 }
 
 
@@ -274,7 +282,7 @@ void calqueue_put(double timestamp, void *payload) {
 	calqueue_node *new_node, *traverse;
 
 	// Fill the node entry
-	new_node = malloc(sizeof(calqueue_node));
+	new_node = get_new_node(_calqueue_allocator);
 	new_node->timestamp = timestamp;
 	new_node->payload = payload;
 	new_node->next = NULL;
@@ -328,6 +336,6 @@ void *calqueue_get(void) {
 	}
 
 	payload = node->payload;
-	free(node);
+	free_node(_calqueue_allocator, node);
 	return payload;
 }

@@ -7,7 +7,8 @@ FLAGS = -Wall -mrtm -pthread -lm
 
 CFLAGS = $(FLAGS)
 
-DEBUG = #Insert -g to enable debug mode
+#Insert -g to enable debug mode
+DEBUG = 
 
 TARGET = test
 
@@ -53,6 +54,7 @@ CORE_SOURCES=core/message_state.c\
 		core/calqueue.c\
 		core/topology.c\
 		core/ipc.c\
+		core/pool_allocator.c\
 		core/main.c\
 		core/numerical.c
 

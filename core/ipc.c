@@ -4,11 +4,11 @@
 #include "message_state.h"
 #include "calqueue.h"
 
+#include "pool_allocator.h"
 #include "ipc.h"
 
 
 #define TEMP_POOL_SIZE	32
-#define POOL_MAX_SIZE	65536
 
 
 /* Memory pool for messages send by the local thread */
@@ -26,28 +26,18 @@ struct __lts_event_pool
 typedef struct __lts_event_pool lts_event_pool;
 
 
-typedef struct _event_pool
-{
-  msg_t *head;
-  unsigned int curr;
-} event_pool;
-
-
 static __thread lts_event_pool lts_pool __attribute__ ((aligned(64)));
 
-static event_pool pool;
-
-static __thread msg_t *last_node = 0;
+static pool_allocator *_pool;
 
 volatile int ipc_lock = 0;
 
 
 void ipc_init(void)
 {
-  calqueue_init();
+  _pool = init_new_allocator(sizeof(msg_t));
   
-  pool.head = malloc(POOL_MAX_SIZE * sizeof(msg_t));
-  pool.curr = 0;
+  calqueue_init();
 }
 
 msg_t *next_event(void)
@@ -77,31 +67,9 @@ double deliver_events(void)
   simtime_t min;
   unsigned int i = 0;
   
-  if((pool.curr + lts_pool.non_deliver_size) >= POOL_MAX_SIZE)
-  {
-    while(pool.curr < POOL_MAX_SIZE)
-    {
-      _new = &pool.head[pool.curr++];
-      memcpy(_new, &lts_pool.local_pool[i], sizeof(msg_t));
-      calqueue_put(_new->timestamp, _new);
-      i++;
-    }
-    
-    pool.head = malloc(POOL_MAX_SIZE * sizeof(msg_t));
-    pool.curr = 0;
-  }
-  
-  if(last_node != 0)
-  {
-    memcpy(last_node, &lts_pool.local_pool[0], sizeof(msg_t));
-    calqueue_put(last_node->timestamp, last_node);
-    i++;
-    last_node = 0;
-  }
-        
   while(i < lts_pool.non_deliver_size)
   {
-    _new = &pool.head[pool.curr++];
+    _new = get_new_node(_pool);
     memcpy(_new, &lts_pool.local_pool[i], sizeof(msg_t));
     calqueue_put(_new->timestamp, _new);
     i++;
@@ -119,7 +87,7 @@ void ScheduleNewEvent(unsigned int receiver, simtime_t timestamp, unsigned int e
 {
   msg_t *new_event;
   
-  if(lts_pool.non_deliver_size == TEMP_POOL_SIZE)
+  if(lts_pool.non_deliver_size == THR_POOL_SIZE)
   {
     rootsim_error(true, "event pool overflow\n");
     return;
@@ -146,8 +114,8 @@ void ScheduleNewEvent(unsigned int receiver, simtime_t timestamp, unsigned int e
 }
 
 void free_event(msg_t *msg)
-{  
-  last_node = msg;
+{
+  free_node(_pool, msg);
 }
 
 
